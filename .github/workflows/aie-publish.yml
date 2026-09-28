@@ -1,21 +1,26 @@
 name: aie-publish
 
-# Build and publish @telekom/* packages to GitHub Packages.
-#   - push to `aie`          -> auto-incrementing prerelease (vX.Y.Z-a.N, dist-tag "aie")
-#   - push tag `v*-aie`      -> stable release (dist-tag "latest")
-#   - workflow_dispatch       -> manual run (acts like a prerelease on the aie branch)
+# Create the GitHub Release UI artifact for an AIE stable release: release
+# notes + tag annotation + downloadable binary archives. This workflow is
+# the "Release" surface; npm publishing to GitHub Packages is handled side-by-side
+# by .github/workflows/aie-package.yml on the same `v*-aie` tag push.
+#
+#   - push tag `v*-aie`      -> create the Release, attach dist/*.zip and dist/*.tar.gz
+#
+# Notes:
+#   - The release is created as a draft first so `gh release upload` inside
+#     packages/opencode/script/build.ts (gated by OPENCODE_RELEASE + GH_REPO)
+#     succeeds; the final softprops step un-drafts it and re-uploads the same
+#     archives (idempotent, --clobber on both sides).
+#   - Pin softprops/action-gh-release to a SHA before merging (the repo pins
+#     third-party actions by SHA, not floating tags).
+
 on:
   push:
-    branches:
-      - aie
-      # TEMP: test the pipeline from a feature branch; remove before merge
-      - feat/aie-modifications-v1.18.31
     tags: ['v*-aie']
-  workflow_dispatch:
 
 permissions:
   contents: write
-  packages: write
 
 concurrency:
   group: aie-publish-${{ github.ref }}
@@ -25,11 +30,11 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
-      - name: Checkout (full history + tags for prerelease counter)
+      - name: Checkout (full history + tags)
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0
@@ -42,60 +47,38 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            TAG="${GITHUB_REF#refs/tags/}"
-            VERSION="${TAG#v}"
-            CHANNEL="latest"
-            IS_PRERELEASE="false"
-          else
-            BASE=$(jq -r '.version' packages/opencode/package.json)
-            EXISTING=$(git tag -l "v${BASE}-a.*" | sed "s/v${BASE}-a\.//" | sort -n | tail -1 || true)
-            if [ -z "${EXISTING}" ]; then
-              NEXT=1
-            else
-              NEXT=$((EXISTING + 1))
-            fi
-            VERSION="${BASE}-a.${NEXT}"
-            CHANNEL="aie"
-            TAG="v${VERSION}"
-            IS_PRERELEASE="true"
-          fi
-          echo "version=${VERSION}"     >> "$GITHUB_OUTPUT"
-          echo "channel=${CHANNEL}"      >> "$GITHUB_OUTPUT"
-          echo "tag=${TAG:-}"            >> "$GITHUB_OUTPUT"
-          echo "is_prerelease=${IS_PRERELEASE}" >> "$GITHUB_OUTPUT"
-          echo "Resolved version=${VERSION} channel=${CHANNEL} prerelease=${IS_PRERELEASE}"
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}"         >> "$GITHUB_OUTPUT"
+          echo "Resolved release version=${VERSION} tag=${TAG}"
 
-      - name: Build all platform binaries
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: ${{ steps.ver.outputs.tag }}
+          generate_release_notes: true
+          draft: true
+
+      - name: Build all platform binaries + archive assets
         env:
           OPENCODE_VERSION: ${{ steps.ver.outputs.version }}
-          OPENCODE_CHANNEL: ${{ steps.ver.outputs.channel }}
+          OPENCODE_CHANNEL: latest
+          OPENCODE_RELEASE: true
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: packages/opencode
         run: bun run build
 
-      - name: Configure npm for GitHub Packages
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - name: Publish release (un-draft + attach archives)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
         with:
-          node-version: "24"
-          registry-url: https://npm.pkg.github.com
-          scope: "@telekom"
-
-      - name: Publish to GitHub Packages
-        env:
-          OPENCODE_VERSION: ${{ steps.ver.outputs.version }}
-          OPENCODE_CHANNEL: ${{ steps.ver.outputs.channel }}
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        working-directory: packages/opencode
-        run: bun run ./script/publish-github-aie.ts
-
-      - name: Tag prerelease
-        if: steps.ver.outputs.is_prerelease == 'true'
-        env:
-          TAG: ${{ steps.ver.outputs.tag }}
-        shell: bash
-        run: |
-          git config user.email "ci@telekom"
-          git config user.name "telekom-ci"
-          git tag "${TAG}"
-          git push origin "${TAG}"
-          echo "Pushed prerelease tag ${TAG}"
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: ${{ steps.ver.outputs.tag }}
+          generate_release_notes: true
+          draft: false
+          files: |
+            packages/opencode/dist/*.zip
+            packages/opencode/dist/*.tar.gz

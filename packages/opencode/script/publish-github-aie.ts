@@ -10,6 +10,11 @@
  *   - publishes to GitHub Packages instead of npmjs.org
  *   - skips Docker / AUR / Homebrew (those are upstream-only)
  *
+ * This script only handles the npm-publish surface. The GitHub Release UI
+ * (release notes + downloadable binary archives) is owned separately by
+ * .github/workflows/aie-publish.yml, which runs side-by-side on `v*-aie` tag
+ * pushes. Do not add release-asset uploads here.
+ *
  * Required env:
  *   OPENCODE_VERSION  full version (e.g. 1.18.31-a.1 or 1.18.31-aie)
  *   OPENCODE_CHANNEL  npm dist-tag (e.g. "aie" for prereleases, "latest" for stable)
