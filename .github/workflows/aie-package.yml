@@ -7,14 +7,17 @@ name: aie-package
 #
 #   - push to `aie`          -> auto-incrementing prerelease (vX.Y.Z-a.N, dist-tag "aie")
 #   - push tag `v*-aie`      -> stable release (dist-tag "latest")
+#   - push tag `v*-test`     -> pre-release (dist-tag "test")
 #   - workflow_dispatch       -> manual run (acts like a prerelease on the aie branch)
+#
+
 on:
   push:
     branches:
       - aie
       # TEMP: test the pipeline from a feature branch; remove before merge
       - feat/aie-modifications-v1.18.31
-    tags: ['v*-aie']
+    tags: ['v*-aie', 'v*-test']
   workflow_dispatch:
 
 permissions:
@@ -49,8 +52,16 @@ jobs:
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             TAG="${GITHUB_REF#refs/tags/}"
             VERSION="${TAG#v}"
-            CHANNEL="latest"
-            IS_PRERELEASE="false"
+            if [[ "$TAG" == *-aie ]]; then
+              CHANNEL="latest"
+              IS_PRERELEASE="false"
+            elif [[ "$TAG" == *-test ]]; then
+              CHANNEL="test"
+              IS_PRERELEASE="true"
+            else
+              CHANNEL="aie"
+              IS_PRERELEASE="true"
+            fi
           else
             BASE=$(jq -r '.version' packages/opencode/package.json)
             EXISTING=$(git tag -l "v${BASE}-a.*" | sed "s/v${BASE}-a\.//" | sort -n | tail -1 || true)
@@ -93,7 +104,7 @@ jobs:
         run: bun run ./script/publish-github-aie.ts
 
       - name: Tag prerelease
-        if: steps.ver.outputs.is_prerelease == 'true'
+        if: steps.ver.outputs.is_prerelease == 'true' && !startsWith(github.ref, 'refs/tags/')
         env:
           TAG: ${{ steps.ver.outputs.tag }}
         shell: bash
