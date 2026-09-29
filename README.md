@@ -1,129 +1,52 @@
-<p align="center">
-  <a href="https://opencode.ai">
-    <picture>
-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
-    </picture>
-  </a>
-</p>
-<p align="center">The open source AI coding agent.</p>
-<p align="center">
-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
-  <a href="https://www.npmjs.com/package/opencode-ai"><img alt="npm" src="https://img.shields.io/npm/v/opencode-ai?style=flat-square" /></a>
-  <a href="https://github.com/anomalyco/opencode/actions/workflows/publish.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/publish.yml?style=flat-square&branch=dev" /></a>
-</p>
+<!--
+SPDX-FileCopyrightText: 2026 Deutsche Telekom AG
 
-<p align="center">
-  <a href="README.md">English</a> |
-  <a href="README.zh.md">简体中文</a> |
-  <a href="README.zht.md">繁體中文</a> |
-  <a href="README.ko.md">한국어</a> |
-  <a href="README.de.md">Deutsch</a> |
-  <a href="README.es.md">Español</a> |
-  <a href="README.fr.md">Français</a> |
-  <a href="README.it.md">Italiano</a> |
-  <a href="README.da.md">Dansk</a> |
-  <a href="README.ja.md">日本語</a> |
-  <a href="README.pl.md">Polski</a> |
-  <a href="README.ru.md">Русский</a> |
-  <a href="README.bs.md">Bosanski</a> |
-  <a href="README.ar.md">العربية</a> |
-  <a href="README.no.md">Norsk</a> |
-  <a href="README.br.md">Português (Brasil)</a> |
-  <a href="README.th.md">ไทย</a> |
-  <a href="README.tr.md">Türkçe</a> |
-  <a href="README.uk.md">Українська</a> |
-  <a href="README.bn.md">বাংলা</a> |
-  <a href="README.gr.md">Ελληνικά</a> |
-  <a href="README.vi.md">Tiếng Việt</a>
-</p>
+SPDX-License-Identifier: CC0-1.0
+-->
 
-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+# opencode – T-Systems AI Engineer fork
 
----
+> **Official documentation:** the original opencode README with all product documentation, installation and usage instructions is maintained upstream at
+> **[https://github.com/anomalyco/opencode/blob/dev/README.md](https://github.com/anomalyco/opencode/blob/dev/README.md)**.
+> An unchanged copy is kept on the [`dev`](../../tree/dev) branch of this fork.
 
-### Installation
+[![REUSE Compliance Check](../../actions/workflows/reuse-compliance.yml/badge.svg)](../../actions/workflows/reuse-compliance.yml)
 
-```bash
-# YOLO
-curl -fsSL https://opencode.ai/install | bash
+## About
 
-# Package managers
-npm i -g opencode-ai@latest        # or bun/pnpm/yarn
-scoop install opencode             # Windows
-choco install opencode             # Windows
-brew install anomalyco/tap/opencode # macOS and Linux (recommended, always up to date)
-brew install opencode              # macOS and Linux (official brew formula, updated less)
-sudo pacman -S opencode            # Arch Linux (Stable)
-paru -S opencode-bin               # Arch Linux (Latest from AUR)
-mise use -g opencode               # Any OS
-nix run nixpkgs#opencode           # or github:anomalyco/opencode for latest dev branch
-```
+opencode is an open source AI coding agent for the terminal, desktop and IDE.
 
-> [!TIP]
-> Remove versions older than 0.1.x before installing.
+This repository is the T-Systems **AI Engineer (AIE)** fork of [opencode](https://github.com/anomalyco/opencode). The upstream code is kept untouched on the `dev` branch; all AIE changes live on the `aie` branch (the default branch of this repository) and are documented below.
 
-### Desktop App (BETA)
+## Changes to the official Repository
 
-OpenCode is also available as a desktop application. Download directly from the [releases page](https://github.com/anomalyco/opencode/releases) or [opencode.ai/download](https://opencode.ai/download).
+All changes to the upstream project made in this fork are listed here. Please add a row for every change you make on the `aie` branch.
 
-| Platform              | Download                           |
-| --------------------- | ---------------------------------- |
-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
-| Windows               | `opencode-desktop-windows-x64.exe` |
-| Linux                 | `.deb`, `.rpm`, or `.AppImage`     |
+| Date | Change | Where | Reason |
+|---|---|---|---|
+| 2026-09-21 | REUSE compliance setup from [telekom/reuse-template](https://github.com/telekom/reuse-template): `REUSE.toml`, license texts in `LICENSES/`, REUSE Compliance Check workflow, SPDX header in `.gitignore` | `REUSE.toml`, `LICENSES/`, `.github/workflows/reuse-compliance.yml`, `.gitignore` | Deutsche Telekom OSPO open source publishing requirements |
+| 2026-09-21 | Replaced the upstream README with this fork README (link to the official README, change log, Code of Conduct and Licensing sections) | `README.md` | Document fork changes and licensing |
+| 2026-09-21 | Added OSS Review Toolkit repository configuration excluding the Remotion marketing videos under `artifacts/` and the GitHub Action source under `github/` from the analysis | `.ort.yml` | Neither is part of the shipped software; needed for the OSPO SBOM |
+| 2026-09-21 | Added Contributor Covenant Code of Conduct from the reuse-template | `CODE_OF_CONDUCT.md` | Upstream has no code of conduct file |
+| 2026-09-21 | Removed the upstream `CONTRIBUTING.md` and `SECURITY.md`; they describe the upstream project's processes and do not apply to this fork | `CONTRIBUTING.md`, `SECURITY.md` | Avoid misleading contributors; T-Systems processes apply |
 
-```bash
-# macOS (Homebrew)
-brew install --cask opencode-desktop
-# Windows (Scoop)
-scoop bucket add extras; scoop install extras/opencode-desktop
-```
+## Code of Conduct
 
-#### Installation Directory
+This project has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) in version 2.1 as our code of conduct, using the file from [telekom/reuse-template](https://github.com/telekom/reuse-template). Please see the details in our [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). All contributors must abide by the code of conduct.
 
-The install script respects the following priority order for the installation path:
+By participating in this project, you agree to abide by its [Code of Conduct](./CODE_OF_CONDUCT.md) at all times.
 
-1. `$OPENCODE_INSTALL_DIR` - Custom installation directory
-2. `$XDG_BIN_DIR` - XDG Base Directory Specification compliant path
-3. `$HOME/bin` - Standard user binary directory (if it exists or can be created)
-4. `$HOME/.opencode/bin` - Default fallback
+## Licensing
 
-```bash
-# Examples
-OPENCODE_INSTALL_DIR=/usr/local/bin curl -fsSL https://opencode.ai/install | bash
-XDG_BIN_DIR=$HOME/.local/bin curl -fsSL https://opencode.ai/install | bash
-```
+Copyright (c) 2026 Deutsche Telekom AG
 
-### Agents
+This repository is a fork of [https://github.com/anomalyco/opencode](https://github.com/anomalyco/opencode). The original work is Copyright (c) 2025 opencode / 2026 Anomaly Innovations Inc. and licensed under the [MIT](./LICENSE) license. Changes made by Deutsche Telekom AG are documented in the section above and are licensed under the same license.
 
-OpenCode includes two built-in agents you can switch between with the `Tab` key.
+All content in this repository is licensed under at least one of the licenses found in [./LICENSES](./LICENSES); you may not use this file, or any other file in this repository, except in compliance with the Licenses.
+You may obtain a copy of the Licenses by reviewing the files found in the [./LICENSES](./LICENSES) folder.
 
-- **build** - Default, full-access agent for development work
-- **plan** - Read-only agent for analysis and code exploration
-  - Denies file edits by default
-  - Asks permission before running bash commands
-  - Ideal for exploring unfamiliar codebases or planning changes
+Unless required by applicable law or agreed to in writing, software distributed under the Licenses is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See in the [./LICENSES](./LICENSES) folder for the specific language governing permissions and limitations under the Licenses.
 
-Also included is a **general** subagent for complex searches and multistep tasks.
-This is used internally and can be invoked using `@general` in messages.
-
-Learn more about [agents](https://opencode.ai/docs/agents).
-
-### Documentation
-
-For more info on how to configure OpenCode, [**head over to our docs**](https://opencode.ai/docs).
-
-### Contributing
-
-If you're interested in contributing to OpenCode, please read our [contributing docs](./CONTRIBUTING.md) before submitting a pull request.
-
-### Building on OpenCode
-
-If you are working on a project that's related to OpenCode and is using "opencode" as part of its name, for example "opencode-dashboard" or "opencode-mobile", please add a note to your README to clarify that it is not built by the OpenCode team and is not affiliated with us in any way.
-
----
-
-**Join our community** [Discord](https://discord.gg/opencode) | [X.com](https://x.com/opencode)
+This project follows the [REUSE standard for software licensing](https://reuse.software/).
+Each file contains copyright and license information, and license texts can be found in the [./LICENSES](./LICENSES) folder. For more information visit https://reuse.software/.
+You can find a guide for developers at https://telekom.github.io/reuse-template/.
