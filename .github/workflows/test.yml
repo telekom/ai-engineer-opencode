@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - dev
+      - aie # Modified for AI Engineer
   pull_request:
   workflow_dispatch:
 

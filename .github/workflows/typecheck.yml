@@ -2,9 +2,9 @@ name: typecheck
 
 on:
   push:
-    branches: [dev]
+    branches: [dev, aie] # Modified for AI Engineer
   pull_request:
-    branches: [dev]
+    branches: [dev, aie] # Modified for AI Engineer
   workflow_dispatch:
 
 jobs:

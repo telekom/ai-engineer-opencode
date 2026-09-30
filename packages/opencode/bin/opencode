@@ -176,6 +176,8 @@ function findBinary(startDir) {
       for (const name of names) {
         const candidate = path.join(modules, name, "bin", binary)
         if (fs.existsSync(candidate)) return candidate
+        const scopedCandidate = path.join(modules, "@telekom", name, "bin", binary)
+        if (fs.existsSync(scopedCandidate)) return scopedCandidate
       }
     }
     const parent = path.dirname(current)
