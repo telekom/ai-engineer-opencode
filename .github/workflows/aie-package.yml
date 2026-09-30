@@ -15,8 +15,6 @@ on:
   push:
     branches:
       - aie
-      # TEMP: test the pipeline from a feature branch; remove before merge
-      - feat/aie-modifications-v1.18.31
     tags: ['v*-aie', 'v*-test']
   workflow_dispatch:
 
