@@ -1,13 +1,14 @@
 name: aie-package
 
-# Build and publish @telekom/* packages to GitHub Packages (npm artifacts only).
-# The GitHub Release UI (release notes + downloadable binary assets) is handled
-# separately by .github/workflows/aie-publish.yml, triggered by the same `v*-aie`
-# tag push so npm publish and Release creation run side-by-side.
+# Build and publish @telekom/* npm packages. Final stable releases (`v*-aie`
+# tag) go to npmjs.com; prereleases (`aie` branch, `v*-test` tag, manual runs)
+# go to GitHub Packages. The GitHub Release UI (release notes + downloadable
+# binary assets) is handled separately by .github/workflows/aie-publish.yml,
+# triggered by the same `v*-aie` tag push.
 #
-#   - push to `aie`          -> auto-incrementing prerelease (vX.Y.Z-a.N, dist-tag "aie")
-#   - push tag `v*-aie`      -> stable release (dist-tag "latest")
-#   - push tag `v*-test`     -> pre-release (dist-tag "test")
+#   - push to `aie`          -> GitHub Packages prerelease (vX.Y.Z-a.N, dist-tag "aie")
+#   - push tag `v*-aie`      -> npmjs.com stable release (dist-tag "latest")
+#   - push tag `v*-test`     -> GitHub Packages pre-release (dist-tag "test")
 #   - workflow_dispatch       -> manual run (acts like a prerelease on the aie branch)
 #
 
@@ -86,14 +87,33 @@ jobs:
         working-directory: packages/opencode
         run: bun run build
 
-      - name: Configure npm for GitHub Packages
+      - name: Configure npm for npmjs.com (final release)
+        if: startsWith(github.ref, 'refs/tags/') && endsWith(github.ref, '-aie')
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+          scope: "@telekom"
+
+      - name: Configure npm for GitHub Packages (prerelease)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') || !endsWith(github.ref, '-aie') }}
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "24"
           registry-url: https://npm.pkg.github.com
           scope: "@telekom"
 
+      - name: Publish to npmjs.com
+        if: startsWith(github.ref, 'refs/tags/') && endsWith(github.ref, '-aie')
+        env:
+          OPENCODE_VERSION: ${{ steps.ver.outputs.version }}
+          OPENCODE_CHANNEL: ${{ steps.ver.outputs.channel }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN_AN }}
+        working-directory: packages/opencode
+        run: bun run ./script/publish-github-aie.ts
+
       - name: Publish to GitHub Packages
+        if: ${{ !startsWith(github.ref, 'refs/tags/') || !endsWith(github.ref, '-aie') }}
         env:
           OPENCODE_VERSION: ${{ steps.ver.outputs.version }}
           OPENCODE_CHANNEL: ${{ steps.ver.outputs.channel }}
