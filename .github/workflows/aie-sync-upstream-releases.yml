@@ -24,6 +24,15 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.AN_FINE_GRAINED_TOKEN }}
 
+      - name: Configure Git Auth
+        run: |
+          git remote set-url origin \
+            https://x-access-token:${{ secrets.AN_FINE_GRAINED_TOKEN }}@github.com/${{ github.repository }}.git
+
+      - name: Debug Git Remotes
+        run: |
+          git remote -v    
+
       - name: Setup Git
         run: |
           git config user.email "ci@telekom"
