@@ -40,6 +40,12 @@ jobs:
           GH_TOKEN: ${{ secrets.AN_FINE_GRAINED_TOKEN }}
         run: gh auth status
 
+      - name: Repo Access Test
+        env:
+          GH_TOKEN: ${{ secrets.AN_FINE_GRAINED_TOKEN }}
+        run: |
+          gh repo view telekom/ai-engineer-opencode
+
       - name: Check latest release and create PR
         env:
           GH_TOKEN: ${{ secrets.AN_FINE_GRAINED_TOKEN }}
