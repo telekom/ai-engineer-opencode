@@ -91,10 +91,12 @@ jobs:
 
           SHORT=$(echo "$COMMIT" | cut -c1-8)
 
-          gh pr create \
-            --base "$AIE_BRANCH" \
-            --head "$BRANCH" \
-            --title "Upstream release: ${TAG}" \
-            --body "Merge upstream release **${TAG}** (${SHORT}) into ${AIE_BRANCH}."
+          gh api \
+            --method POST \
+            repos/telekom/ai-engineer-opencode/pulls \
+            -f title="Upstream release: ${TAG}" \
+            -f head="${BRANCH}" \
+            -f base="${AIE_BRANCH}" \
+            -f body="Merge upstream release **${TAG}** (${SHORT}) into ${AIE_BRANCH}."  
 
           echo "PR created for release ${TAG}"
