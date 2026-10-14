@@ -8,6 +8,7 @@ on:
 env:
   AIE_BRANCH: aie
   UPSTREAM_REPO: anomalyco/opencode
+  REPO: "${GITHUB_REPOSITORY}"
 
 jobs:
   check-new-release:
@@ -68,15 +69,19 @@ jobs:
             exit 0
           fi
 
-          # Skip if PR already exists
-          PR_COUNT=$(gh pr list \
-            --head "$BRANCH" \
-            --state all \
-            --json number \
-            --jq 'length')
+          # Check for existing PR (open, closed, or merged)
+          EXISTING_PR=$(gh api \
+            "repos/${REPO}/pulls?state=all&per_page=100" \
+            --jq ".[] |
+              select(
+                .head.ref == \"${BRANCH}\" and
+                .base.ref == \"${AIE_BRANCH}\"
+              ) |
+              .number" \
+            | head -n 1)
 
-          if [ "$PR_COUNT" -gt 0 ]; then
-            echo "PR already exists for ${TAG}"
+          if [ -n "${EXISTING_PR}" ]; then
+            echo "PR #${EXISTING_PR} already exists for ${TAG}"
             exit 0
           fi
 
