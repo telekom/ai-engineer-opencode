@@ -8,7 +8,6 @@ on:
 env:
   AIE_BRANCH: aie
   UPSTREAM_REPO: anomalyco/opencode
-  REPO: "${GITHUB_REPOSITORY}"
 
 jobs:
   check-new-release:
@@ -46,6 +45,9 @@ jobs:
           GH_TOKEN: ${{ secrets.OPENCODE_FINE_TOKEN }}
         run: |
 
+          set -euo pipefail
+          REPO="${GITHUB_REPOSITORY}"
+
           # Get latest NON-prerelease, NON-draft release
           TAG=$(gh api repos/${UPSTREAM_REPO}/releases \
             --jq 'map(select(.draft == false and .prerelease == false)) | first | .tag_name')
@@ -70,15 +72,17 @@ jobs:
           fi
 
           # Check for existing PR (open, closed, or merged)
-          EXISTING_PR=$(gh api \
-            "repos/${REPO}/pulls?state=all&per_page=100" \
+          EXISTING_PR=$(gh pr list \
+            --repo "${REPO}" \
+            --state all \
+            --json number,headRefName,baseRefName \
             --jq ".[] |
-              select(
-                .head.ref == \"${BRANCH}\" and
-                .base.ref == \"${AIE_BRANCH}\"
-              ) |
-              .number" \
-            | head -n 1)
+                  select(
+                    .headRefName == \"${BRANCH}\" and
+                    .baseRefName == \"${AIE_BRANCH}\"
+                  ) |
+                  .number" \
+            | head -n 1)  
 
           if [ -n "${EXISTING_PR}" ]; then
             echo "PR #${EXISTING_PR} already exists for ${TAG}"
