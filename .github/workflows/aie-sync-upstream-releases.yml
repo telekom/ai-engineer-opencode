@@ -1,0 +1,111 @@
+name: aie-sync-upstream-releases
+
+on:
+  schedule:
+    - cron: "0 2 * * *" # Daily at 02:00 UTC
+  workflow_dispatch:
+
+env:
+  AIE_BRANCH: aie
+  UPSTREAM_REPO: anomalyco/opencode
+
+jobs:
+  check-new-release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.OPENCODE_FINE_TOKEN }}   
+
+      - name: Setup Git
+        run: |
+          git config user.email "ci@telekom"
+          git config user.name "telekom-ci"
+
+      - name: Add upstream and fetch tags
+        run: |
+          git remote add upstream https://github.com/${UPSTREAM_REPO}.git || true
+          git fetch upstream --tags --force
+          git fetch origin --prune
+
+      - name: Login to GitHub CLI
+        env:
+          GH_TOKEN: ${{ secrets.OPENCODE_FINE_TOKEN }}
+        run: gh auth status
+
+      - name: Check latest release and create PR
+        env:
+          GH_TOKEN: ${{ secrets.OPENCODE_FINE_TOKEN }}
+        run: |
+
+          set -euo pipefail
+          REPO="${GITHUB_REPOSITORY}"
+
+          # Get latest NON-prerelease, NON-draft release
+          TAG=$(gh api repos/${UPSTREAM_REPO}/releases \
+            --jq 'map(select(.draft == false and .prerelease == false)) | first | .tag_name')
+
+          if [ -z "$TAG" ] || [ "$TAG" = "null" ]; then
+            echo "No published release found"
+            exit 0
+          fi
+
+          echo "Latest release tag: $TAG"
+
+          # Ensure tag exists locally
+          git fetch upstream "refs/tags/${TAG}:refs/tags/${TAG}" --force
+
+          BRANCH="upstream/${TAG}"
+          COMMIT=$(git rev-list -n 1 "$TAG")
+
+          # Skip if release already integrated
+          if git tag -l "${TAG}-aie" | grep -q .; then
+            echo "${TAG}-aie already exists"
+            exit 0
+          fi
+
+          # Check for existing PR (open, closed, or merged)
+          EXISTING_PR=$(gh pr list \
+            --repo "${REPO}" \
+            --state all \
+            --json number,headRefName,baseRefName \
+            --jq ".[] |
+                  select(
+                    .headRefName == \"${BRANCH}\" and
+                    .baseRefName == \"${AIE_BRANCH}\"
+                  ) |
+                  .number" \
+            | head -n 1)  
+
+          if [ -n "${EXISTING_PR}" ]; then
+            echo "PR #${EXISTING_PR} already exists for ${TAG}"
+            exit 0
+          fi
+
+          # Create branch from release commit
+          if git ls-remote --heads origin "$BRANCH" | grep -q .; then
+            echo "Branch $BRANCH already exists"
+          else
+            git checkout -b "$BRANCH" "$COMMIT"
+            git push origin "$BRANCH"
+            echo "Created branch $BRANCH"
+          fi
+
+          SHORT=$(echo "$COMMIT" | cut -c1-8)
+
+          gh api \
+            --method POST \
+            repos/telekom/ai-engineer-opencode/pulls \
+            -f title="Upstream release: ${TAG}" \
+            -f head="${BRANCH}" \
+            -f base="${AIE_BRANCH}" \
+            -f body="Merge upstream release **${TAG}** (${SHORT}) into ${AIE_BRANCH}."  
+
+          echo "PR created for release ${TAG}"

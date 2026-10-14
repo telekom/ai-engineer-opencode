@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: 2026 Deutsche Telekom AG
+#
+# SPDX-License-Identifier: CC0-1.0
+
+# OSS Review Toolkit repository configuration, see
+# https://oss-review-toolkit.org/ort/docs/configuration/ort-yml
+excludes:
+  paths:
+  - pattern: "artifacts/**"
+    reason: "OTHER"
+    comment: >-
+      Marketing/blog video projects rendered with Remotion. They are not part of
+      the distributed opencode software and are not built or shipped with it.
+  - pattern: "github/**"
+    reason: "BUILD_TOOL_OF"
+    comment: >-
+      Source of the opencode GitHub Action. It depends on the workspace package
+      @opencode-ai/sdk but is not part of the root Bun workspace, so it cannot be
+      resolved stand-alone by the analyzer; it is not part of the shipped CLI.
