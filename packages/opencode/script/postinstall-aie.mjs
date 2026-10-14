@@ -91,7 +91,7 @@ function findBinary() {
   throw new Error(`Could not find any suitable binary package for ${platform}-${arch}. Tried: ${variants.join(", ")}`)
 }
 
-function prepareBinDirectory(targetName) {
+function linkBinary(sourcePath, targetName) {
   const binDir = path.join(__dirname, "bin")
   const targetPath = path.join(binDir, targetName)
 
@@ -100,30 +100,38 @@ function prepareBinDirectory(targetName) {
     fs.mkdirSync(binDir, { recursive: true })
   }
 
-  // Remove existing binary/symlink if it exists
-  if (fs.existsSync(targetPath)) {
-    fs.unlinkSync(targetPath)
+  // Stage the new binary next to the target before replacing it, so a failure
+  // never leaves the wrapper without a usable opencode.exe.
+  const stagingPath = `${targetPath}.new`
+  fs.mkdirSync(path.dirname(stagingPath), { recursive: true })
+
+  try {
+    // Hard link first (no admin privileges required on Windows, unlike symlinks).
+    try {
+      fs.linkSync(sourcePath, stagingPath)
+    } catch {
+      fs.copyFileSync(sourcePath, stagingPath)
+    }
+    fs.chmodSync(stagingPath, 0o755)
+
+    // Swap: remove the old target (or stub) and rename the staged file into place.
+    if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath)
+    fs.renameSync(stagingPath, targetPath)
+    console.log(`opencode binary linked: ${targetPath} -> ${sourcePath}`)
+  } finally {
+    if (fs.existsSync(stagingPath)) fs.unlinkSync(stagingPath)
   }
-
-  return { binDir, targetPath }
-}
-
-function symlinkBinary(sourcePath, targetName) {
-  const { targetPath } = prepareBinDirectory(targetName)
-
-  fs.symlinkSync(sourcePath, targetPath)
-  console.log(`opencode binary symlinked: ${targetPath} -> ${sourcePath}`)
 
   // Verify the file exists after operation
   if (!fs.existsSync(targetPath)) {
-    throw new Error(`Failed to symlink binary to ${targetPath}`)
+    throw new Error(`Failed to link binary to ${targetPath}`)
   }
 }
 
 async function main() {
   try {
     const { binaryPath, targetName } = findBinary()
-    symlinkBinary(binaryPath, targetName)
+    linkBinary(binaryPath, targetName)
     console.log("✅ opencode installed successfully!")
   } catch (error) {
     console.error(`Failed to setup opencode binary: ${error.message}`)

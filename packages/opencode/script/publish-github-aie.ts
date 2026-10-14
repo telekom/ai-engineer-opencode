@@ -70,6 +70,7 @@ const wrapperDir = `./dist/${pkg.name}`
 await $`mkdir -p ${wrapperDir}/bin`
 await $`cp ./script/postinstall-aie.mjs ${wrapperDir}/postinstall-aie.mjs`
 await Bun.file(`${wrapperDir}/LICENSE`).write(await Bun.file("../../LICENSE").text())
+await Bun.file(`${wrapperDir}/README.md`).write(await Bun.file("../../README.md").text())
 
 // Stub that surfaces a clear error if the postinstall script was skipped
 // (e.g. --ignore-scripts or pnpm). postinstall-aie.mjs overwrites this.
