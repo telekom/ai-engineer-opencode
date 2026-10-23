@@ -103,7 +103,7 @@ jobs:
           gh api \
             --method POST \
             repos/telekom/ai-engineer-opencode/pulls \
-            -f title="Upstream release: ${TAG}" \
+            -f title="chore: upstream-release-${TAG}" \
             -f head="${BRANCH}" \
             -f base="${AIE_BRANCH}" \
             -f body="Merge upstream release **${TAG}** (${SHORT}) into ${AIE_BRANCH}."  
