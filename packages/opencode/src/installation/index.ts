@@ -254,14 +254,6 @@ const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProcess.Serv
     const npmLatest = Effect.fnUntraced(function* () {
       const aieScope = yield* Effect.promise(() => isAieScope())
       const pkgName = aieScope ? AIE_PACKAGE_NAME : "opencode-ai"
-      // Ankit
-      const reg = yield* NpmConfig.registry(process.cwd())
-      yield* Effect.logInfo("Ankit NPM registry resolved", {
-        reg,
-        cwd: process.cwd(),
-        pkgName,
-      })
-      // Ankit
       const response = yield* httpOk.execute(
         HttpClientRequest.get(`${yield* NpmConfig.registry(process.cwd())}/${pkgName}`).pipe(
           HttpClientRequest.acceptJson,
@@ -273,14 +265,7 @@ const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProcess.Serv
 
           ? data["dist-tags"].latest
           : data["dist-tags"][NPM_TAG] ?? NPM_TAG
-        // Ankit
-        yield* Effect.logInfo("Ankit NPM version resolved", {
-          version,
-          npmTag: NPM_TAG,
-          distTags: data["dist-tags"],
-        })
-        // Ankit
-        return version
+      return version
     })
 
 
@@ -357,13 +342,6 @@ const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProcess.Serv
         if (method === "brew" && !(yield* getBrewFormula()).includes("/")) return InstallationVersion
         return yield* Effect.gen(function* () {
           const found = yield* npmLatest()
-          // Ankit
-            yield* Effect.logInfo("Ankit inside Latest version found", {
-              found,
-              currentVersion: InstallationVersion,
-              method,
-            })
-          // Ankit
           if (!isUpdate(InstallationVersion, found)) return InstallationVersion
           if (method === "choco" && !(yield* chocoHas(found))) return InstallationVersion
           return found
