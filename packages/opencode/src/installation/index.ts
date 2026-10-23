@@ -9,17 +9,31 @@ import { errorMessage } from "@/util/error"
 import { ChildProcess } from "effect/unstable/process"
 import { AppProcess } from "@opencode-ai/core/process"
 import path from "path"
+import { $ } from "bun"
 import { makeRuntime } from "@opencode-ai/core/effect/runtime"
 import semver from "semver"
 import { InstallationChannel, InstallationVersion } from "@opencode-ai/core/installation/version"
 import { NpmConfig } from "@opencode-ai/core/npm-config"
 import { InstallationEvent } from "@opencode-ai/schema/installation-event"
 
+const AIE_SCOPE = "@telekom"
+const AIE_PACKAGE_NAME = `${AIE_SCOPE}/opencode-ai`
+
 export type Method = "curl" | "npm" | "yarn" | "pnpm" | "bun" | "brew" | "scoop" | "choco" | "unknown"
 
 export type ReleaseType = "patch" | "minor" | "major"
 
 export const Event = InstallationEvent
+
+export async function isAieScope(): Promise<boolean> {
+  const output = await $`npm list -g --depth=0`.throws(false).quiet().text()
+  if (output.includes(AIE_PACKAGE_NAME)) return true
+  const bunOutput = await $`bun pm ls -g`.throws(false).quiet().text()
+  if (bunOutput.includes(AIE_PACKAGE_NAME)) return true
+  const pnpmOutput = await $`pnpm list -g --depth=0`.throws(false).quiet().text()
+  if (pnpmOutput.includes(AIE_PACKAGE_NAME)) return true
+  return false
+}
 
 export function getReleaseType(current: string, latest: string): ReleaseType {
   const currMajor = semver.major(current)
@@ -74,6 +88,7 @@ export function isUpdate(current: string, latest: string) {
 const NPM_TAG = InstallationChannel === "local" ? "latest" : InstallationChannel
 
 // Response schemas for external version APIs
+const NpmRegistryResponse = Schema.Struct({ "dist-tags": Schema.Record(Schema.String, Schema.String), })
 const NpmPackage = Schema.Struct({ version: Schema.String })
 const BrewInfoV2 = Schema.Struct({
   formulae: Schema.Array(Schema.Struct({ versions: Schema.Struct({ stable: Schema.String }) })),
@@ -237,14 +252,37 @@ const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProcess.Serv
     })
 
     const npmLatest = Effect.fnUntraced(function* () {
+      const aieScope = yield* Effect.promise(() => isAieScope())
+      const pkgName = aieScope ? AIE_PACKAGE_NAME : "opencode-ai"
+      // Ankit
+      const reg = yield* NpmConfig.registry(process.cwd())
+      yield* Effect.logInfo("Ankit NPM registry resolved", {
+        reg,
+        cwd: process.cwd(),
+        pkgName,
+      })
+      // Ankit
       const response = yield* httpOk.execute(
-        HttpClientRequest.get(`${yield* NpmConfig.registry(process.cwd())}/opencode-ai/${NPM_TAG}`).pipe(
+        HttpClientRequest.get(`${yield* NpmConfig.registry(process.cwd())}/${pkgName}`).pipe(
           HttpClientRequest.acceptJson,
         ),
       )
-      const data = yield* HttpClientResponse.schemaBodyJson(NpmPackage)(response)
-      return data.version
+      const data = yield* HttpClientResponse.schemaBodyJson(NpmRegistryResponse)(response)
+      const version = 
+          NPM_TAG === "latest"
+
+          ? data["dist-tags"].latest
+          : data["dist-tags"][NPM_TAG] ?? NPM_TAG
+        // Ankit
+        yield* Effect.logInfo("Ankit NPM version resolved", {
+          version,
+          npmTag: NPM_TAG,
+          distTags: data["dist-tags"],
+        })
+        // Ankit
+        return version
     })
+
 
     // Chocolatey can only install versions its moderated community feed has published.
     const chocoHas = Effect.fnUntraced(function* (version: string) {
@@ -298,6 +336,10 @@ const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProcess.Serv
 
         for (const check of checks) {
           const output = yield* check.command()
+          // Check for AIE-scoped package first, then upstream package
+          if (output.includes(AIE_PACKAGE_NAME)) {
+            return check.name
+          }
           const installedName =
             check.name === "brew" || check.name === "choco" || check.name === "scoop" ? "opencode" : "opencode-ai"
           if (output.includes(installedName)) {
@@ -315,12 +357,21 @@ const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProcess.Serv
         if (method === "brew" && !(yield* getBrewFormula()).includes("/")) return InstallationVersion
         return yield* Effect.gen(function* () {
           const found = yield* npmLatest()
+          // Ankit
+            yield* Effect.logInfo("Ankit inside Latest version found", {
+              found,
+              currentVersion: InstallationVersion,
+              method,
+            })
+          // Ankit
           if (!isUpdate(InstallationVersion, found)) return InstallationVersion
           if (method === "choco" && !(yield* chocoHas(found))) return InstallationVersion
           return found
         }).pipe(Effect.timeout("10 seconds"))
       }, Effect.orDie),
       upgrade: Effect.fn("Installation.upgrade")(function* (m: Method, target: string) {
+        const aieScope = yield* Effect.promise(() => isAieScope())
+        const pkgName = aieScope ? AIE_PACKAGE_NAME : "opencode-ai"
         if (semver.valid(target) && semver.major(target) >= 2)
           return yield* new UpgradeFailedError({
             stderr: `OpenCode ${target} is OpenCode 2. Upgrade with \`opencode upgrade --major\` or see ${MAJOR_INSTRUCTIONS}`,
@@ -331,16 +382,16 @@ const layer: Layer.Layer<Service, never, HttpClient.HttpClient | AppProcess.Serv
             upgradeResult = yield* upgradeCurl(target)
             break
           case "npm":
-            upgradeResult = yield* run(["npm", "install", "-g", `opencode-ai@${target}`])
+            upgradeResult = yield* run(["npm", "install", "-g", `${pkgName}@${target}`])
             break
           case "pnpm":
-            upgradeResult = yield* run(["pnpm", "install", "-g", `opencode-ai@${target}`])
+            upgradeResult = yield* run(["pnpm", "install", "-g", `${pkgName}@${target}`])
             break
           case "bun":
-            upgradeResult = yield* run(["bun", "install", "-g", `opencode-ai@${target}`])
+            upgradeResult = yield* run(["bun", "install", "-g", `${pkgName}@${target}`])
             break
           case "yarn":
-            upgradeResult = yield* run(["yarn", "global", "add", `opencode-ai@${target}`])
+            upgradeResult = yield* run(["yarn", "global", "add", `${pkgName}@${target}`])
             break
           case "brew": {
             const formula = yield* getBrewFormula()
