@@ -45,6 +45,8 @@ const decodeVpPackages = Schema.decodeUnknownOption(
   Schema.fromJsonString(Schema.Array(Schema.Struct({ name: Schema.String }))),
 )
 
+const decodeRegistryVersion = Schema.decodeUnknownOption(Schema.fromJsonString(Schema.String))
+
 const installNames: Record<Method, string> = {
   curl: "The OpenCode installer",
   npm: "npm",
@@ -150,7 +152,7 @@ const make = Effect.gen(function* () {
       .readFileString(path.join(directory, "package.json"))
       .pipe(Effect.flatMap((text) => Effect.try(() => JSON.parse(text))))
     // Source invocations run inside Bun or Node, which may themselves be npm packages.
-    if (!/^@opencode(?:-ai)?\/cli(?:-node)?$/.test(manifest.name)) return
+    if (!/^(?:@opencode(?:-ai)?\/cli|@telekom\/opencode-cli)(?:-node)?$/.test(manifest.name)) return
     if (Object.values(manifest.bin ?? {}).some((bin) => path.resolve(directory, bin) === executable))
       return manifest.name
   }).pipe(Effect.orElseSucceed(() => undefined))
@@ -273,6 +275,35 @@ const make = Effect.gen(function* () {
   }
 
   const release = Effect.fnUntraced(function* (method?: Method) {
+    // The official update service only describes upstream packages, so AIE builds resolve
+    // their latest version from the registry they were installed from.
+    if (method !== "brew" && method !== "winget" && installedPackage?.startsWith("@telekom/")) {
+      const failure = (detail: string, cause?: unknown) =>
+        new UpgradeError(
+          {
+            title: "Could not check for OpenCode updates",
+            detail,
+            retry: "Check the network and registry configuration, then run opencode upgrade again.",
+          },
+          cause === undefined ? undefined : { cause },
+        )
+      const response = yield* exec(
+        ["npm", "view", `${installedPackage}@${channel}`, "version", "--json"],
+        "1 minute",
+      ).pipe(Effect.mapError((cause) => failure(errorDetail(cause), cause)))
+      if (response.code !== 0)
+        return yield* Effect.fail(
+          failure(
+            `The registry could not resolve ${installedPackage}@${channel}. ${resultDetail(response)}`,
+          ),
+        )
+      const parsed = Option.getOrUndefined(decodeRegistryVersion(response.stdout.trim()))
+      if (!parsed || !parseReleaseVersion(parsed))
+        return yield* Effect.fail(
+          failure(`The registry returned an invalid version for ${installedPackage}@${channel}.`),
+        )
+      return { package: installedPackage, version: parsed }
+    }
     const distribution = method === "brew" ? "homebrew" : "npm"
     // Homebrew Core builds its formula on its own schedule, so the tap release does not describe it.
     const core = method === "brew" && installedFormula === "opencode"

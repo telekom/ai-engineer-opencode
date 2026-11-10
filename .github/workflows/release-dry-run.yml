@@ -135,7 +135,7 @@ jobs:
           OPENCODE_RELEASE_NOTES: ${{ needs.plan.outputs.channel == 'latest' && inputs.release_notes || '' }}
           GH_TOKEN: ${{ github.token }} # read-only; raises the rate limit for Bun release downloads
       - name: Verify bundled models catalog
-        run: bun packages/cli/script/catalog-smoke.ts packages/cli/dist/cli-linux-x64/bin/opencode
+        run: bun packages/cli/script/catalog-smoke.ts packages/cli/dist/opencode-cli-linux-x64/bin/opencode
         env:
           OPENCODE_MODELS_SNAPSHOT: ${{ github.workspace }}/.cache/models-catalog/api.json
       - name: Upload
@@ -179,7 +179,7 @@ jobs:
         run: bun run script/service-smoke.ts --node
       - name: Verify bundled models catalog
         if: matrix.target != 'windows-arm64'
-        run: bun packages/cli/script/catalog-smoke.ts "packages/cli/dist/node/cli-node-$OPENCODE_TARGET/bin/opencode2-node$EXE"
+        run: bun packages/cli/script/catalog-smoke.ts "packages/cli/dist/node/opencode-cli-node-$OPENCODE_TARGET/bin/opencode2-node$EXE"
         env:
           OPENCODE_TARGET: ${{ matrix.target }}
           EXE: ${{ startsWith(matrix.target, 'windows') && '.exe' || '' }}

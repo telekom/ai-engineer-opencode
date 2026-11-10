@@ -34,16 +34,18 @@ function fixture(
     const root = yield* fs.makeTempDirectoryScoped({ prefix: "opencode-updater-" })
     const execPath = process.execPath
     const modules = path.join(root, "node_modules")
+    const [scope, unscoped] = name.split("/")
+    const install = path.join(modules, scope, unscoped)
     const executable = executableOverride
       ? yield* executableOverride(root, path.join(root, "home"))
       : formula
         ? path.join(root, "Cellar", formula, "2.0.20", "bin", "opencode")
-        : path.join(modules, "@opencode", "cli", "bin", "opencode")
+        : path.join(install, "bin", "opencode")
     yield* fs.makeDirectory(path.dirname(executable), { recursive: true })
     yield* fs.writeFileString(executable, "binary")
     if (!formula && !executableOverride)
       yield* fs.writeFileString(
-        path.join(modules, "@opencode", "cli", "package.json"),
+        path.join(install, "package.json"),
         JSON.stringify({ name, bin: { opencode: "bin/opencode" } }),
       )
     const requests: string[] = []
@@ -294,6 +296,36 @@ it.live("install failures expose stderr and process errors do not report success
     }),
   )
 })
+
+it.live("AIE installs detect npm and resolve their release from the registry", () =>
+  Effect.gen(function* () {
+    const list = { stdout: Buffer.from("@telekom/opencode-cli@2.3.4") }
+    const test = yield* fixture(
+      (command) =>
+        command.command === "npm"
+          ? command.args[0] === "view"
+            ? { stdout: Buffer.from('"2.3.4"') }
+            : list
+          : command.command === "vp"
+            ? { stdout: Buffer.from("[]") }
+            : list,
+      "@telekom/opencode-cli",
+    )
+    expect(yield* test.updater.method()).toBe("npm")
+    // No official update service requests: the registry answers instead.
+    expect(test.requests).toEqual([])
+    expect(yield* test.updater.latest()).toBe("2.3.4")
+    yield* test.updater.upgrade("npm", "2.3.4")
+    expect(test.commands).toContainEqual([
+      "npm",
+      "install",
+      "--global",
+      "--allow-scripts=@telekom/opencode-cli",
+      "--force",
+      "@telekom/opencode-cli@2.3.4",
+    ])
+  }),
+)
 
 it.live("method detection tolerates unavailable package managers", () =>
   Effect.gen(function* () {

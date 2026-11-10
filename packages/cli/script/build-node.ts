@@ -91,7 +91,7 @@ async function assertTextImportsInlined(bundlePath: string) {
 }
 
 for (const target of targets) {
-  console.log(`building cli-node-${targetName(target)}`)
+  console.log(`building opencode-cli-node-${targetName(target)}`)
   const assets = await collectNodeAssets(target)
   await rm("dist-node", { recursive: true, force: true })
   const assetHash = await hashNodeAssets(assets)
@@ -117,7 +117,7 @@ for (const target of targets) {
   }
   if (bundleOnly) continue
 
-  const name = `cli-node-${targetName(target)}`
+  const name = `opencode-cli-node-${targetName(target)}`
   const binary = target.platform === "win32" ? "opencode2-node.exe" : "opencode2-node"
   const output = path.join(outdir, name, "bin", binary)
   if (!builder) throw new Error("Node SEA builder is unavailable")
@@ -146,10 +146,10 @@ for (const target of targets) {
     path.join(outdir, name, "package.json"),
     `${JSON.stringify(
       {
-        name: `@opencode/${name}`,
+        name: `@telekom/${name}`,
         version: Script.version,
         license: pkg.license,
-        repository: { type: "git", url: "git+https://github.com/anomalyco/opencode.git" },
+        repository: { type: "git", url: "git+https://github.com/telekom/ai-engineer-opencode.git" },
         os: [target.platform],
         cpu: [target.arch],
       },

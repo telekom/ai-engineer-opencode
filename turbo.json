@@ -23,7 +23,7 @@
     "typecheck:tsc": {
       "dependsOn": ["transit"]
     },
-    "@opencode/cli#typecheck:tsc": {
+    "@telekom/opencode-cli#typecheck:tsc": {
       "dependsOn": ["transit", "@opencode/core#typecheck:tsc"]
     },
     "@opencode/sdk#typecheck:tsc": {

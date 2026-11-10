@@ -21,18 +21,28 @@ await packDistribution({
   command: "opencode",
   legacyCommand: "opencode2",
   binary: "opencode",
-  packagePrefix: "@opencode/cli-",
+  packagePrefix: "@telekom/opencode-cli-",
   archive: (target) => target.startsWith("linux-"),
 })
 if (existsSync(path.join(root, "node"))) {
   await packDistribution({
     root: path.join(root, "node"),
-    name: "@opencode/cli-node",
+    name: "@telekom/opencode-cli-node",
     command: "opencode2-node",
     binary: "opencode2-node",
-    packagePrefix: "@opencode/cli-node-",
+    packagePrefix: "@telekom/opencode-cli-node-",
     archive: () => true,
   })
+}
+
+await writeReadme()
+
+// Copies the repository README.md next to the packed tarballs, so dist/npm ships the main
+// README text as-is.
+async function writeReadme() {
+  const readme = path.resolve(import.meta.dir, "../../../README.md")
+  await Bun.file(path.join(npmDir, "README.md")).write(await Bun.file(readme).text())
+  console.log("wrote", path.join(npmDir, "README.md"))
 }
 
 async function packDistribution(input: {
@@ -81,7 +91,7 @@ async function packDistribution(input: {
         scripts: { postinstall: "node ./postinstall.mjs" },
         version,
         license: pkg.license,
-        repository: { type: "git", url: "git+https://github.com/anomalyco/opencode.git" },
+        repository: { type: "git", url: "git+https://github.com/telekom/ai-engineer-opencode.git" },
         os: ["darwin", "linux", "win32"],
         cpu: ["arm64", "x64"],
         optionalDependencies: binaries,
@@ -91,7 +101,7 @@ async function packDistribution(input: {
     ),
   )
 
-  await Promise.all(Object.keys(binaries).map((name) => pack(`${input.root}/${name.replace("@opencode/", "")}`)))
+  await Promise.all(Object.keys(binaries).map((name) => pack(`${input.root}/${name.replace("@telekom/", "")}`)))
   await pack(`${input.root}/${input.name}`)
   await Promise.all(
     Object.keys(binaries)
@@ -99,7 +109,7 @@ async function packDistribution(input: {
       .filter(input.archive)
       .map((target) =>
         archive(
-          path.join(input.root, `${input.packagePrefix.replace("@opencode/", "")}${target}`, "bin"),
+          path.join(input.root, `${input.packagePrefix.replace("@telekom/", "")}${target}`, "bin"),
           target,
           input.binary,
         ),

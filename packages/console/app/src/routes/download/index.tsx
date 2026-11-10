@@ -60,15 +60,15 @@ export default function Download() {
                 </code>
                 <CopyStatus />
               </button>
-              <button data-component="cli-row" onClick={handleCopyClick("npm install -g @opencode/cli")}>
+              <button data-component="cli-row" onClick={handleCopyClick("npm install -g @telekom/opencode-cli")}>
                 <code>
-                  npm install -g <strong>@opencode/cli</strong>
+                  npm install -g <strong>@telekom/opencode-cli</strong>
                 </code>
                 <CopyStatus />
               </button>
-              <button data-component="cli-row" onClick={handleCopyClick("bun install -g --trust @opencode/cli")}>
+              <button data-component="cli-row" onClick={handleCopyClick("bun install -g --trust @telekom/opencode-cli")}>
                 <code>
-                  bun install -g --trust <strong>@opencode/cli</strong>
+                  bun install -g --trust <strong>@telekom/opencode-cli</strong>
                 </code>
                 <CopyStatus />
               </button>
