@@ -13,10 +13,11 @@ name: aie-package
 #
 
 on:
-  push:
-    branches:
-      - aie
-    tags: ['v*-aie', 'v*-test']
+  ## Commented temporarily during V2 migration
+  #push:
+  #  branches:
+  #    - aie
+  #  tags: ['v*-aie', 'v*-test']
   workflow_dispatch:
 
 permissions:

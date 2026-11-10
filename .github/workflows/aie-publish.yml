@@ -16,8 +16,10 @@ name: aie-publish
 #     third-party actions by SHA, not floating tags).
 
 on:
-  push:
-    tags: ['v*-aie']
+  ## Commented temporarily during V2 migration and added workflow_dispatch:
+  #push:
+  #  tags: ['v*-aie']
+  workflow_dispatch:  
 
 permissions:
   contents: write

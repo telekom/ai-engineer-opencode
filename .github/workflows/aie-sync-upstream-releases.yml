@@ -1,8 +1,9 @@
 name: aie-sync-upstream-releases
 
 on:
-  schedule:
-    - cron: "0 2 * * *" # Daily at 02:00 UTC
+  ## Commented temporarily during V2 migration
+  #schedule:
+  #  - cron: "0 2 * * *" # Daily at 02:00 UTC
   workflow_dispatch:
 
 env:
