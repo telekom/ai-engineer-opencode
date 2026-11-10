@@ -22,6 +22,7 @@ on:
 permissions:
   contents: write
   packages: write
+  workflows: write
 
 concurrency:
   group: aie-publish-${{ github.ref }}
