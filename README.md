@@ -23,7 +23,7 @@ This repository is the T-Systems **AI Engineer (AIE)** fork of [opencode](https:
 <strong>Step 1: </strong> Install OpenCode globally
 
 ```bash 
-npm install -g @telekom/opencode-ai
+npm install -g @telekom/opencode-cli
 ```
 
 <strong>Step 2: </strong> Authenticate with OpenCode

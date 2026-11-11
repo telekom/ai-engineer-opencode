@@ -59,6 +59,8 @@ jobs:
         env:
           OPENCODE_VERSION: ${{ steps.ver.outputs.version }}
           OPENCODE_CHANNEL: latest
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: packages/cli
         run: bun run build
 
@@ -66,6 +68,8 @@ jobs:
         env:
           OPENCODE_VERSION: ${{ steps.ver.outputs.version }}
           OPENCODE_CHANNEL: latest
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: packages/cli
         run: bun run pack
 
