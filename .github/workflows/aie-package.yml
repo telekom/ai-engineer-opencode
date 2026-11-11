@@ -1,14 +1,15 @@
 name: aie-package
 
-# Build and publish @telekom/* npm packages. Final stable releases (`v*-aie`
-# tag) go to npmjs.com; prereleases (`aie` branch, `v*-test` tag, manual runs)
-# go to GitHub Packages. The GitHub Release UI (release notes + downloadable
+# Build and publish @telekom/* npm packages. Stable releases (`v*-aie` tag,
+# dist-tag "latest") and test releases (`v*-test` tag, dist-tag "test") go to
+# npmjs.com; aie prereleases (`aie-v2` branch, manual runs) go to GitHub
+# Packages. The GitHub Release UI (release notes + downloadable
 # binary assets) is handled separately by .github/workflows/aie-publish.yml,
 # triggered by the same `v*-aie` tag push.
 #
 #   - push to `aie-v2`          -> GitHub Packages prerelease (vX.Y.Z-a.N, dist-tag "aie")
 #   - push tag `v*-aie`      -> npmjs.com stable release (dist-tag "latest")
-#   - push tag `v*-test`     -> GitHub Packages pre-release (dist-tag "test")
+#   - push tag `v*-test`     -> npmjs.com test release (dist-tag "test")
 #   - workflow_dispatch       -> manual run (acts like a prerelease on the aie branch)
 #
 
@@ -94,16 +95,16 @@ jobs:
         working-directory: packages/cli
         run: bun run pack
 
-      - name: Configure npm for npmjs.com (final release)
-        if: startsWith(github.ref, 'refs/tags/') && endsWith(github.ref, '-aie')
+      - name: Configure npm for npmjs.com (stable and test releases)
+        if: startsWith(github.ref, 'refs/tags/') && (endsWith(github.ref, '-aie') || endsWith(github.ref, '-test'))
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "24"
           registry-url: https://registry.npmjs.org
           scope: "@telekom"
 
-      - name: Configure npm for GitHub Packages (prerelease)
-        if: ${{ !startsWith(github.ref, 'refs/tags/') || !endsWith(github.ref, '-aie') }}
+      - name: Configure npm for GitHub Packages (aie prerelease)
+        if: ${{ !endsWith(github.ref, '-aie') && !endsWith(github.ref, '-test') }}
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "24"
@@ -111,7 +112,7 @@ jobs:
           scope: "@telekom"
 
       - name: Publish to npmjs.com
-        if: startsWith(github.ref, 'refs/tags/') && endsWith(github.ref, '-aie')
+        if: startsWith(github.ref, 'refs/tags/') && (endsWith(github.ref, '-aie') || endsWith(github.ref, '-test'))
         env:
           OPENCODE_VERSION: ${{ steps.ver.outputs.version }}
           OPENCODE_CHANNEL: ${{ steps.ver.outputs.channel }}
@@ -119,7 +120,7 @@ jobs:
         run: bun run packages/cli/script/publish-github-aie.ts
 
       - name: Publish to GitHub Packages
-        if: ${{ !startsWith(github.ref, 'refs/tags/') || !endsWith(github.ref, '-aie') }}
+        if: ${{ !endsWith(github.ref, '-aie') && !endsWith(github.ref, '-test') }}
         env:
           OPENCODE_VERSION: ${{ steps.ver.outputs.version }}
           OPENCODE_CHANNEL: ${{ steps.ver.outputs.channel }}
