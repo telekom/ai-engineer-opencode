@@ -11,6 +11,7 @@ import path from "node:path"
 // the repository root. The release workflow signs the macOS and Windows packages and archives afterwards.
 const dir = path.resolve(import.meta.dir, "..")
 const root = path.join(dir, "dist")
+const readme = Bun.file(path.resolve(import.meta.dir, "../../../README.md"))
 process.chdir(dir)
 await mkdir(npmDir, { recursive: true })
 await mkdir(archiveDir, { recursive: true })
@@ -33,16 +34,6 @@ if (existsSync(path.join(root, "node"))) {
     packagePrefix: "@telekom/opencode-cli-node-",
     archive: () => true,
   })
-}
-
-await writeReadme()
-
-// Copies the repository README.md next to the packed tarballs, so dist/npm ships the main
-// README text as-is.
-async function writeReadme() {
-  const readme = path.resolve(import.meta.dir, "../../../README.md")
-  await Bun.file(path.join(npmDir, "README.md")).write(await Bun.file(readme).text())
-  console.log("wrote", path.join(npmDir, "README.md"))
 }
 
 async function packDistribution(input: {
@@ -119,6 +110,7 @@ async function packDistribution(input: {
 
 async function pack(directory: string) {
   if (process.platform !== "win32") await $`chmod -R 755 .`.cwd(directory)
+  await Bun.write(path.join(directory, "README.md"), readme)
   await $`bun pm pack --destination ${npmDir}`.cwd(directory)
 }
 
