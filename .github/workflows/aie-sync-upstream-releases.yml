@@ -58,6 +58,12 @@ jobs:
 
           echo "Latest release tag: $TAG"
 
+          # Skip process-daemon releases
+          if [[ "$TAG" == process-* ]]; then
+            echo "Skipping process-daemon release tag: $TAG"
+            exit 0
+          fi
+
           # Route releases by major version
           if [[ "$TAG" == v1* ]]; then
             AIE_TARGET_BRANCH="aie"
