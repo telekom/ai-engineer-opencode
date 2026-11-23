@@ -28,7 +28,7 @@ npm install -g @telekom/opencode-cli
 
 <strong>Step 2: </strong> Authenticate with OpenCode
 ```bash 
-opencode auth login https://plugins.ai.t-systems.net
+opencode auth login https://plugins.ai.t-systems.net/opencode-v2
 ```
 
 <strong>Step 3: </strong> Open OpenCode and type /connect to connect with your provider and then put the api key
